@@ -184,7 +184,7 @@ h1.scene{font-family:var(--type);font-weight:400;font-size:clamp(28px,4vw,40px);
 .title .rules{text-align:left}
 .title .rules summary{text-align:center}
 .crest{width:min(340px,80vw);height:auto;display:block;margin:0 auto 14px;filter:drop-shadow(0 0 30px rgba(224,48,58,.35))}
-.crest-sm{height:28px;width:auto;object-fit:contain}
+.crest-sm{height:30px;width:auto;object-fit:contain;display:block;transform:translateY(-9px)}
 .btns{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}
 .rules{margin-top:40px;border-top:1px solid var(--line);padding-top:18px}
 .rules summary{font-family:var(--type);font-size:19px;cursor:pointer}
@@ -279,7 +279,7 @@ h1.scene{font-family:var(--type);font-weight:400;font-size:clamp(28px,4vw,40px);
   .mini{display:flex}
   .brand small{display:none}
   .brand{font-size:16px;gap:6px}
-  .crest-sm{height:18px}
+  .crest-sm{height:20px;transform:translateY(-6px)}
   .choice{flex-direction:column;align-items:flex-start}
   .choice .tag{text-align:left;white-space:normal}
   .rules dl{grid-template-columns:1fr}
@@ -308,7 +308,7 @@ h1.scene{font-family:var(--type);font-weight:400;font-size:clamp(28px,4vw,40px);
   </main>
 </div>
 <script>
-const CREST_SVG=(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-40 -8 524 222"><defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9dcdc"/></linearGradient><linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4b55"/><stop offset="1" stop-color="#9c1428"/></linearGradient></defs><g fill="url(#w)"><path d="M20 90H124V114L58 186H126V210H16V186L82 114H20Z"/><path fill-rule="evenodd" d="M172 90H206L250 210H218L209 183H169L160 210H128ZM177 159H201L189 122Z"/><path fill-rule="evenodd" d="M262 90H322C352 90 368 106 368 129C368 147 358 160 342 165L370 210H334L310 168H292V210H262ZM292 114V145H320C331 145 337 139 337 129C337 120 331 114 320 114Z"/><path d="M376 90H476V116H441V210H411V116H376Z"/></g><g transform="translate(6 86) rotate(-22) scale(.92)"><path d="M0 0 L-8 -46 L22 -22 L46 -58 L70 -22 L100 -46 L92 0 Z" fill="url(#r)" stroke="#2a0a10" stroke-width="4" stroke-linejoin="round"/><rect x="-2" y="-2" width="96" height="16" rx="3" fill="#7a1022" stroke="#2a0a10" stroke-width="4"/><path d="M6 6H86" stroke="#ff4b55" stroke-width="3" stroke-linecap="round"/><circle cx="-8" cy="-50" r="7" fill="#ff6b73" stroke="#2a0a10" stroke-width="3"/><circle cx="46" cy="-63" r="7" fill="#ff6b73" stroke="#2a0a10" stroke-width="3"/><circle cx="100" cy="-50" r="7" fill="#ff6b73" stroke="#2a0a10" stroke-width="3"/><path d="M34 -64l-4 -12M58 -64l4 -12M112 -44l10 -6M-20 -44l-10 -6" stroke="#d9c4c6" stroke-width="3" stroke-linecap="round"/></g></svg>`);const CREST='data:image/svg+xml;utf8,'+encodeURIComponent(CREST_SVG);
+const CREST_SVG=(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -25 532 240"><defs><linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9dcdc"/></linearGradient><linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff4b55"/><stop offset="1" stop-color="#9c1428"/></linearGradient></defs><g fill="url(#w)"><path d="M20 90H124V114L58 186H126V210H16V186L82 114H20Z"/><path fill-rule="evenodd" d="M172 90H206L250 210H218L209 183H169L160 210H128ZM177 159H201L189 122Z"/><path fill-rule="evenodd" d="M262 90H322C352 90 368 106 368 129C368 147 358 160 342 165L370 210H334L310 168H292V210H262ZM292 114V145H320C331 145 337 139 337 129C337 120 331 114 320 114Z"/><path d="M376 90H476V116H441V210H411V116H376Z"/></g><g transform="translate(6 86) rotate(-22) scale(.92)"><path d="M0 0 L-8 -46 L22 -22 L46 -58 L70 -22 L100 -46 L92 0 Z" fill="url(#r)" stroke="#2a0a10" stroke-width="4" stroke-linejoin="round"/><rect x="-2" y="-2" width="96" height="16" rx="3" fill="#7a1022" stroke="#2a0a10" stroke-width="4"/><path d="M6 6H86" stroke="#ff4b55" stroke-width="3" stroke-linecap="round"/><circle cx="-8" cy="-50" r="7" fill="#ff6b73" stroke="#2a0a10" stroke-width="3"/><circle cx="46" cy="-63" r="7" fill="#ff6b73" stroke="#2a0a10" stroke-width="3"/><circle cx="100" cy="-50" r="7" fill="#ff6b73" stroke="#2a0a10" stroke-width="3"/><path d="M34 -64l-4 -12M58 -64l4 -12M112 -44l10 -6M-20 -44l-10 -6" stroke="#d9c4c6" stroke-width="3" stroke-linecap="round"/></g></svg>`);const CREST='data:image/svg+xml;utf8,'+encodeURIComponent(CREST_SVG);
 const FAV_SVG=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#1e0d11"/><rect x="1.5" y="1.5" width="61" height="61" rx="12.5" fill="none" stroke="#7a1422" stroke-width="3"/>`+CREST_SVG.replace('<svg xmlns="http://www.w3.org/2000/svg"','<svg x="3" y="3" width="58" height="58"')+`</svg>`;
 (function(){try{const u='data:image/svg+xml;utf8,'+encodeURIComponent(FAV_SVG);document.querySelectorAll('link[rel~="icon"]').forEach(l=>l.remove());const l=document.createElement('link');l.rel='icon';l.type='image/svg+xml';l.href=u;document.head.appendChild(l);const a=document.createElement('link');a.rel='apple-touch-icon';a.href=u;document.head.appendChild(a)}catch(e){}})();
 
