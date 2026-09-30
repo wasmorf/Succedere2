@@ -21,6 +21,31 @@
 .succ-card p{margin:0 0 12px;font-size:16px}
 .succ-link{display:inline-block;color:var(--bone);text-decoration:none}
 .succ-link:hover{border-color:var(--accent)}
+.sv-card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;text-align:left}
+.sv-title-card{max-width:520px;margin:18px auto 4px;border-left:3px solid var(--accent)}
+.sv-head{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.sv-where{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.sv-title{font-family:var(--type);font-size:18px;margin:2px 0 4px}
+.sv-stats{font-family:var(--mono);font-size:12px;color:var(--bone)}
+.sv-time{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:2px}
+.sv-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.sv-btns .sm,.sm{padding:8px 14px;font-size:15px}
+.sv-btns .danger{color:#ff8a93;border-color:#5a1a22}
+.sv-grid{display:grid;gap:10px}
+@media (min-width:760px){.sv-grid{grid-template-columns:repeat(3,1fr)}}
+.sv-h{font-family:var(--type);font-size:19px;margin:26px 0 4px}
+.sv-note{font-size:15px;color:var(--faint);margin:0 0 10px}
+.sv-warn{background:#2a0d12;border:1px solid #7a1422;border-radius:8px;padding:10px 14px;font-size:15px}
+.sv-ch{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.sv-ch:last-child{border-bottom:none}
+.sv-ch .sm{white-space:nowrap;flex-shrink:0}
+.sv-file{cursor:pointer;display:inline-block}
+.sv-code{width:100%;min-height:90px;background:var(--ground);color:var(--bone);border:1px solid var(--line);border-radius:6px;font-family:var(--mono);font-size:11px;padding:8px;word-break:break-all;box-sizing:border-box}
+.sv-toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--panel2);color:var(--bone);border:1px solid var(--accent);border-radius:20px;padding:8px 16px;font-family:var(--mono);font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:300}
+.sv-toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.sv-toast{transition:none}}
+.succ-next{margin-top:12px;border-left-color:#e0c080}
+.cta.succ-link{color:#fff}
 </style>
 <style>
 :root{
@@ -5692,9 +5717,86 @@ const draft=()=>({attr:{AGI:1,FOR:1,INT:1,PRE:1,VIG:1},picks:[]});
 let D=draft();
 let busy=false;
 function clone(o){return JSON.parse(JSON.stringify(o))}
-function save(){try{if(S&&S.cls)localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
-function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null}catch(e){return null}}
-function clearSave(){try{localStorage.removeItem(SAVE_KEY)}catch(e){}}
+/* ---------- salvamento ---------- */
+const SV={auto:'succ2-auto',bak:'succ2-auto-bak',slot:n=>'succ2-slot-'+n,ch:'succ2-chapters',old:'protegere-v1'};
+const SLOTS=3;
+const MEMSTORE={};
+const STORE_OK=(()=>{try{const k='succ2-test';localStorage.setItem(k,'1');localStorage.removeItem(k);return true}catch(e){return false}})();
+function sget(k){try{if(STORE_OK){const r=localStorage.getItem(k);return r?JSON.parse(r):null}}catch(e){}return MEMSTORE[k]?JSON.parse(MEMSTORE[k]):null}
+function sset(k,v){const txt=JSON.stringify(v);MEMSTORE[k]=txt;try{if(STORE_OK)localStorage.setItem(k,txt);return true}catch(e){return false}}
+function sdel(k){delete MEMSTORE[k];try{if(STORE_OK)localStorage.removeItem(k)}catch(e){}}
+(function migrate(){try{if(STORE_OK&&!localStorage.getItem(SV.auto)){const o=localStorage.getItem(SV.old);if(o)localStorage.setItem(SV.auto,o)}}catch(e){}})();
+const CHAPTERS=['p_chegada','c2a_pensao','c3a_missao','c4a_roger','c5a_missao','a2a_base','a2c2a_sala','a3a_base','a4a_cicatriz','a5a_relogio','a5n_ano'];
+let playMark=Date.now();
+function tickPlay(){const now=Date.now();if(S&&S.cls&&S.screen!=='title'&&S.screen!=='saves'&&document.visibilityState!=='hidden'){const dt=Math.min(now-playMark,60000);S.playMs=(S.playMs||0)+dt}playMark=now}
+function stamp(s){s.savedAt=Date.now();s.sv=2;return s}
+function validState(s){return !!(s&&s.cls&&(s.screen==='end'||s.screen==='create'||(s.scene&&SCENES[s.scene])))}
+function save(){try{if(!S||!S.cls)return;tickPlay();sset(SV.auto,stamp(S))}catch(e){}}
+function loadSave(){const a=sget(SV.auto);if(validState(a))return a;const b=sget(SV.bak);return validState(b)?b:null}
+function clearSave(){sdel(SV.auto)}
+function backupNow(){try{if(S&&S.cls&&S.screen!=='end'){tickPlay();sset(SV.bak,stamp(clone(S)))}}catch(e){}}
+function storeChapter(id){try{if(!S||!S.cls||!CHAPTERS.includes(id))return;const all=sget(SV.ch)||{};const c=clone(S);delete c.checkpoint;c.log=[];const isNew=!all[id];all[id]=stamp(c);sset(SV.ch,all);if(isNew)toast(L('Capítulo salvo','Chapter saved','Capítulo guardado'))}catch(e){}}
+function normalizeLoaded(s){s=clone(s);if(s.screen==='combat'&&s.checkpoint)s=Object.assign(clone(s.checkpoint),{checkpoint:s.checkpoint,screen:'game',playMs:s.playMs,savedAt:s.savedAt});if(s.screen==='arsenal'||s.screen==='down'||s.screen==='levelup'&&!s.lvl)s.screen='game';s.combat=s.screen==='combat'?s.combat:null;return s}
+function resumeState(s){S=normalizeLoaded(s);busy=false;if(!S.checkpoint)setCheckpoint();playMark=Date.now();save();render();window.scrollTo(0,0)}
+function fmtPlay(ms){const m=Math.floor((ms||0)/60000),h=Math.floor(m/60);return h?`${h}h ${String(m%60).padStart(2,'0')}min`:`${m}min`}
+function fmtAgo(t){if(!t)return '';const s=(Date.now()-t)/1000;if(s<60)return L('agora mesmo','just now','recién');if(s<3600)return L(`há ${Math.floor(s/60)} min`,`${Math.floor(s/60)} min ago`,`hace ${Math.floor(s/60)} min`);if(s<86400)return L(`há ${Math.floor(s/3600)} h`,`${Math.floor(s/3600)} h ago`,`hace ${Math.floor(s/3600)} h`);const d=new Date(t);return d.toLocaleDateString(LANG==='en'?'en-US':LANG==='es'?'es-AR':'pt-BR',{day:'2-digit',month:'short'})+' '+d.toLocaleTimeString(LANG==='en'?'en-US':LANG==='es'?'es-AR':'pt-BR',{hour:'2-digit',minute:'2-digit'})}
+function saveMeta(s){if(!s)return null;const sc=SCENES[s.scene];
+  const where=s.screen==='end'?(s.act===2?L('Ato II concluído','Act II complete','Acto II completado'):L('Fim do Ato I','End of Act I','Fin del Acto I')):(sc?sc.act:'');
+  const title=s.screen==='end'?L('Relatório final','Final report','Informe final'):(sc?sc.title:'');
+  return {where,title,stats:`${PV()} ${s.pv}/${s.pvMax} · SAN ${s.san}/${s.sanMax} · NEX ${s.nex}%`,play:fmtPlay(s.playMs),ago:fmtAgo(s.savedAt)}}
+function saveCard(s,extra){const m=saveMeta(s);if(!m)return `<p class="empty" style="margin:0">${L('Vazio','Empty','Vacío')}</p>`;
+  return `<div class="sv-where">${m.where}</div><div class="sv-title">${m.title}</div><div class="sv-stats">${m.stats}</div><div class="sv-time">${L('Tempo de jogo','Play time','Tiempo de juego')}: ${m.play}${m.ago?' · '+L('salvo','saved','guardado')+' '+m.ago:''}</div>${extra||''}`}
+function toast(msg){try{let t=document.getElementById('svToast');if(!t){t=document.createElement('div');t.id='svToast';t.className='sv-toast';t.setAttribute('role','status');document.body.appendChild(t)}t.textContent='✓ '+msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2200)}catch(e){}}
+function confirmBox(title,text,yes,onYes,no){
+  if(document.querySelector('.qmodal'))return;
+  const m=document.createElement('div');m.className='qmodal';m.setAttribute('role','dialog');m.setAttribute('aria-modal','true');
+  m.innerHTML=`<div class="qbox"><h2>${title}</h2><p>${text}</p><div class="btns"><button class="cta" data-q="yes">${yes}</button><button class="ghost" data-q="no">${no||L('Cancelar','Cancel','Cancelar')}</button></div></div>`;
+  const close=()=>{m.remove();document.removeEventListener('keydown',esc)};const esc=e=>{if(e.key==='Escape')close()};
+  m.addEventListener('click',e=>{const q=e.target.closest('[data-q]');if(q){close();if(q.dataset.q==='yes')onYes()}else if(e.target===m)close()});
+  document.addEventListener('keydown',esc);document.body.appendChild(m);m.querySelector('[data-q=yes]').focus()}
+function exportData(){return {game:'succedere2',v:2,exported:Date.now(),auto:sget(SV.auto),bak:sget(SV.bak),slots:[...Array(SLOTS)].map((_,i)=>sget(SV.slot(i+1))),chapters:sget(SV.ch)||{}}}
+function importData(obj){if(!obj||obj.game!=='succedere2')throw new Error('bad');
+  if(obj.auto)sset(SV.auto,obj.auto);else sdel(SV.auto);if(obj.bak)sset(SV.bak,obj.bak);
+  (obj.slots||[]).forEach((s,i)=>{if(i<SLOTS){if(s)sset(SV.slot(i+1),s);else sdel(SV.slot(i+1))}});
+  if(obj.chapters)sset(SV.ch,obj.chapters)}
+let DLNS=null;try{if(window.claude&&typeof window.claude.use==='function')window.claude.use('downloads').then(x=>{DLNS=x}).catch(()=>{})}catch(e){}
+function saveFileName(){const d=new Date();return `succedere2-save-${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`}
+async function downloadSave(){const data=JSON.stringify(exportData());const name=saveFileName();
+  if(DLNS){try{await DLNS.save({filename:name,data});toast(L('Arquivo exportado','File exported','Archivo exportado'))}catch(e){const c=e&&e.code;if(c!=='declined'&&c!=='rate_limited'){SAVESUI.code=true;render()}}return}
+  if(window.claude){SAVESUI.code=true;render();return}
+  try{const url=URL.createObjectURL(new Blob([data],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);toast(L('Arquivo exportado','File exported','Archivo exportado'))}catch(e){SAVESUI.code=true;render()}}
+const SAVESUI={code:false};
+function renderSaves(){
+  const auto=loadSave(),chs=sget(SV.ch)||{};
+  const slot=i=>{const s=sget(SV.slot(i));return `<div class="sv-card">
+      <div class="sv-head">${L('Espaço','Slot','Espacio')} ${i}</div>${saveCard(s)}
+      <div class="sv-btns"><button class="ghost sm" data-a="sv-slot-save" data-id="${i}" ${auto?'':'disabled'}>${L('Salvar aqui','Save here','Guardar aquí')}</button>${s?`<button class="cta sm" data-a="sv-slot-load" data-id="${i}">${L('Carregar','Load','Cargar')}</button><button class="ghost sm danger" data-a="sv-slot-del" data-id="${i}">${L('Apagar','Delete','Borrar')}</button>`:''}</div></div>`};
+  const chList=CHAPTERS.filter(id=>chs[id]&&SCENES[id]).map(id=>`<div class="sv-ch"><div><div class="sv-where">${SCENES[id].act}</div><div class="sv-time">${fmtAgo(chs[id].savedAt)}</div></div><button class="ghost sm" data-a="sv-ch-load" data-id="${id}">${L('Recomeçar daqui','Restart here','Reiniciar desde aquí')}</button></div>`).join('');
+  return `<section class="saves">
+    <div class="act">${L('Arquivo de agente','Agent file','Expediente de agente')}</div>
+    <h1 class="scene">${L('Salvamentos','Saves','Partidas guardadas')}</h1>
+    ${STORE_OK?'':`<p class="sv-warn">${L('Este navegador não deixa o jogo salvar sozinho (modo anônimo ou dados bloqueados). O progresso some ao fechar a página. Use <b>Exportar</b> para guardar um arquivo.','This browser won\'t let the game save on its own (private mode or blocked data). Progress is lost when you close the page. Use <b>Export</b> to keep a file.','Este navegador no deja que el juego guarde solo (modo incógnito o datos bloqueados). El progreso se pierde al cerrar la página. Usa <b>Exportar</b> para guardar un archivo.')}</p>`}
+    <h2 class="sv-h">${L('Salvamento automático','Autosave','Guardado automático')}</h2>
+    <p class="sv-note">${L('O jogo salva sozinho a cada escolha, e guarda uma cópia de segurança em cada ponto de controle.','The game saves itself after every choice, and keeps a backup at every checkpoint.','El juego guarda solo en cada elección, y hace una copia de seguridad en cada punto de control.')}</p>
+    <div class="sv-card sv-auto">${saveCard(auto)}${auto?`<div class="sv-btns"><button class="cta sm" data-a="continue">${auto.screen==='end'&&auto.act!==2?L('Continuar para o Ato II','Continue to Act II','Continuar al Acto II'):L('Continuar','Continue','Continuar')}</button></div>`:''}</div>
+    <h2 class="sv-h">${L('Espaços manuais','Manual slots','Espacios manuales')}</h2>
+    <p class="sv-note">${L('Guarde o ponto em que você está para voltar depois, por exemplo antes de uma escolha difícil.','Keep your current spot to come back to later, for example before a hard choice.','Guarda el punto en que estás para volver después, por ejemplo antes de una elección difícil.')}</p>
+    <div class="sv-grid">${[...Array(SLOTS)].map((_,i)=>slot(i+1)).join('')}</div>
+    <h2 class="sv-h">${L('Capítulos','Chapters','Capítulos')}</h2>
+    <p class="sv-note">${L('Cada capítulo que você alcança fica guardado aqui. Recomece de qualquer um deles para ver outras escolhas.','Every chapter you reach is kept here. Restart from any of them to see other choices.','Cada capítulo que alcanzas queda guardado aquí. Reinicia desde cualquiera para ver otras elecciones.')}</p>
+    <div class="sv-card">${chList||`<p class="empty" style="margin:0">${L('Nenhum capítulo ainda.','No chapters yet.','Ningún capítulo todavía.')}</p>`}</div>
+    <h2 class="sv-h">${L('Levar para outro aparelho','Move to another device','Llevar a otro dispositivo')}</h2>
+    <p class="sv-note">${L('O salvamento fica só neste navegador. Exporte um arquivo para guardar ou continuar em outro celular ou computador.','Saves live only in this browser. Export a file to keep it safe or continue on another phone or computer.','El guardado queda solo en este navegador. Exporta un archivo para guardarlo o seguir en otro celular o computadora.')}</p>
+    <div class="sv-btns"><button class="ghost sm" data-a="sv-export">${L('Exportar arquivo','Export file','Exportar archivo')}</button><label class="ghost sm sv-file">${L('Importar arquivo','Import file','Importar archivo')}<input type="file" id="svImport" accept=".json,application/json" hidden></label><button class="ghost sm" data-a="sv-code">${SAVESUI.code?L('Esconder código','Hide code','Ocultar código'):L('Usar código','Use code','Usar código')}</button></div>
+    ${SAVESUI.code?`<div class="sv-card" style="margin-top:10px"><p class="sv-note" style="margin-top:0">${L('Copie este código e cole no outro aparelho, ou cole aqui um código para importar.','Copy this code and paste it on the other device, or paste a code here to import.','Copia este código y pégalo en el otro dispositivo, o pega aquí un código para importar.')}</p><textarea id="svCode" class="sv-code" spellcheck="false">${btoa(unescape(encodeURIComponent(JSON.stringify(exportData()))))}</textarea><div class="sv-btns"><button class="ghost sm" data-a="sv-copy">${L('Copiar','Copy','Copiar')}</button><button class="cta sm" data-a="sv-paste">${L('Importar código colado','Import pasted code','Importar código pegado')}</button></div></div>`:''}
+    <div class="btns" style="margin-top:26px"><button class="ghost" data-a="menu">${L('Voltar ao menu','Back to menu','Volver al menú')}</button></div>
+  </section>`}
+function doImport(obj){confirmBox(L('Importar salvamentos?','Import saves?','¿Importar partidas?'),L('Os salvamentos deste navegador serão substituídos pelos do arquivo.','This browser\'s saves will be replaced by the ones in the file.','Las partidas de este navegador se reemplazarán por las del archivo.'),L('Importar','Import','Importar'),()=>{try{importData(obj);SAVESUI.code=false;toast(L('Salvamentos importados','Saves imported','Partidas importadas'));render()}catch(e){confirmBox(L('Arquivo inválido','Invalid file','Archivo inválido'),L('Esse arquivo não é um salvamento do Succedere 2.','This file isn\'t a Succedere 2 save.','Este archivo no es una partida de Succedere 2.'),'OK',()=>{})}})}
+document.addEventListener('change',ev=>{if(ev.target&&ev.target.id==='svImport'){const f=ev.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{let o=null;try{o=JSON.parse(r.result)}catch(e){}doImport(o)};r.readAsText(f);ev.target.value=''}});
+setInterval(()=>{tickPlay()},15000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save();else playMark=Date.now()});
+window.addEventListener('pagehide',()=>save());
+
 
 /* ================= DADOS / ROLAGENS ================= */
 const d=n=>1+Math.floor(Math.random()*n);
@@ -5775,7 +5877,7 @@ function _calm(n){const b=S.san;S.san=Math.min(S.sanMax,S.san+n);return S.san>b?
 function defense(){return 10+S.attr.AGI+curArmor().def}
 function ritualDT(){return 10+S.attr.PRE+(isTrained('Ocultismo')?5:0)}
 const has=c=>S.clues.includes(c);
-function setCheckpoint(){const c=clone(S);delete c.checkpoint;c.log=[];S.checkpoint=c}
+function setCheckpoint(){const c=clone(S);delete c.checkpoint;c.log=[];S.checkpoint=c;backupNow()}
 function recalcMax(){
   const c=CLASSES[S.cls],st=(S.nex-5)/5;
   S.pvMax=c.pv[0]+S.attr.VIG+st*(c.pv[1]+S.attr.VIG);
@@ -5864,7 +5966,7 @@ function render(){
   PATENTE=PATENTES[S.patente||'recruta'];
   renderChrome();
   if(S.screen!=='game'&&S.screen!=='combat')$('tray').hidden=true;
-  const f={title:renderTitle,create:renderCreate,game:renderGame,combat:renderCombat,levelup:renderLevel,down:renderDown,end:renderEnd,arsenal:renderArsenal}[S.screen];
+  const f={title:renderTitle,create:renderCreate,game:renderGame,combat:renderCombat,levelup:renderLevel,down:renderDown,end:renderEnd,arsenal:renderArsenal,saves:renderSaves}[S.screen];
   sc.innerHTML=f();
   renderSheet();
 }
@@ -5881,15 +5983,22 @@ function renderTitle(){
     ${langPicker()}
     <p class="lede">${L('Todo mundo conhece o Mada: o homem de dreads e katana que protege a Ordem. Poucos sabem que o nome dele é Adam, que ele nasceu para ser dublê, e que tudo começou num domingo de aniversário.','Everyone knows Mada: the man with dreadlocks and a katana who protects the Order. Few know his name is Adam, that he was born to be a stuntman, and that it all began on a birthday Sunday.','Todos conocen a Mada: el hombre de rastas y katana que protege la Orden. Pocos saben que se llama Adam, que nació para ser doble de riesgo, y que todo empezó un domingo de cumpleaños.')}</p>
     <p class="lede" style="font-size:16px">${L('Um RPG narrativo em vários atos, com testes de dados, combate, sanidade, NEX, equipamento e vínculos. Ato I · Capítulos 1 a 5 e Ato II completo (Capítulos 1 a 5) disponíveis.','A narrative RPG in several acts, with dice rolls, combat, sanity, NEX, gear and bonds. Act I · Chapters 1 to 5 and Act II complete (Chapters 1 to 5) available.','Un RPG narrativo en varios actos, con tiradas de dados, combate, cordura, NEX, equipo y vínculos. Acto I · Capítulos 1 a 5 y Acto II completo (Capítulos 1 a 5) disponibles.')}</p>
+    ${sv&&!(sv.screen==='end'&&sv.act===2)?`<div class="sv-card sv-title-card"><div class="sv-head">${L('Jogo salvo','Saved game','Partida guardada')}</div>${saveCard(sv)}<div class="sv-btns"><button class="cta" data-a="continue">${sv.screen==='end'?L('Continuar para o Ato II','Continue to Act II','Continuar al Acto II'):L('Continuar','Continue','Continuar')}</button></div></div>`:''}
     <div class="btns">
-      <button class="cta" data-a="new">${L('Começar','Start','Comenzar')}</button>
-      ${sv&&sv.cls&&sv.screen!=='end'?`<button class="ghost" data-a="continue">${L('Continuar','Continue','Continuar')} · ${sv.age} ${L('anos','y/o','años')}</button>`:''}
+      <button class="${sv&&!(sv.screen==='end'&&sv.act===2)?'ghost':'cta'}" data-a="new">${sv?L('Começar do zero','Start over','Empezar de cero'):L('Começar','Start','Comenzar')}</button>
+      <button class="ghost" data-a="saves">${L('Salvamentos','Saves','Partidas guardadas')}</button>
     </div>
     <div class="succ-card">
       <p class="hint" style="margin:0 0 4px">${L('A história antes desta','The story before this one','La historia antes de esta')}</p>
       <h2>Succedere · ${L('A história de Koranna Wezen','The story of Koranna Wezen','La historia de Koranna Wezen')}</h2>
       <p>${L('O Ato II continua depois dos acontecimentos de Succedere. Conheça a história da Koranna antes dela cruzar o caminho do Mada.','Act II continues after the events of Succedere. Discover Koranna\'s story before she crossed paths with Mada.','El Acto II continúa después de los acontecimientos de Succedere. Conoce la historia de Koranna antes de que se cruzara con Mada.')}</p>
       <a class="ghost succ-link" href="https://wasmorf.github.io/Succedere/" target="_blank" rel="noopener noreferrer">${L('Conferir o Succedere','Check out Succedere','Ver Succedere')} ↗</a>
+    </div>
+    <div class="succ-card succ-next">
+      <p class="hint" style="margin:0 0 4px">${L('A próxima história','The next story','La próxima historia')}</p>
+      <h2>Succedere 3</h2>
+      <p>${L('A história continua depois do casamento. Terminou o Succedere 2? O próximo capítulo já está esperando.','The story continues after the wedding. Finished Succedere 2? The next chapter is already waiting.','La historia continúa después de la boda. ¿Terminaste Succedere 2? El próximo capítulo ya te está esperando.')}</p>
+      <a class="cta succ-link" href="https://wasmorf.github.io/Succedere3/" target="_blank" rel="noopener noreferrer">${L('Jogar o Succedere 3','Play Succedere 3','Jugar Succedere 3')} ↗</a>
     </div>
     <details class="rules">
       <summary>${L('Como funcionam as regras','How the rules work','Cómo funcionan las reglas')}</summary>
@@ -5973,14 +6082,14 @@ function startAct2(){
   const r=newInst('raijin');S.inv.push(r);S.equip=r.uid;S.inv.push(newInst('faca'));S.inv.push(newInst('pesada'));
   const g=newInst('vestimenta');g.skill='Acrobacia';g.gift=L('Luvas do pai','Dad\'s gloves','Guantes de papá');S.inv.push(g);
   recalcMax();S.pv=S.pvMax;S.pe=S.peMax;S.san=S.sanMax;
-  setCheckpoint();save();render();window.scrollTo(0,0);
+  setCheckpoint();save();storeChapter(S.scene);render();window.scrollTo(0,0);
 }
 function startGame(){
   S={screen:'game',name:'Mada Zart',origin:'duble',cls:'combatente',age:9,attr:{...MADA_ATTR},trained:[...MADA_TRAINED],nex:5,power:0,powers:[],
     inv:[],equip:'_desarmado',treatReady:true,rituals:[],clues:[],flags:{},done:{},log:[],bond:{},patente:'recruta',
     scene:'p_chegada',outcome:null,nextBonus:0,combat:null};
   recalcMax();S.pv=S.pvMax;S.pe=S.peMax;S.san=S.sanMax;
-  setCheckpoint();save();render();window.scrollTo(0,0);
+  setCheckpoint();save();storeChapter(S.scene);render();window.scrollTo(0,0);
 }
 const AGES={p_chegada:9,c1_set:16,c1_fim:16,c2_almoco:17,c2a_pensao:17,c2h_fim:18,c3a_missao:19,c4a_roger:20,c4c_base:22,c5a_missao:24};
 
@@ -6014,10 +6123,10 @@ async function choose(i){
 }
 async function proceed(res){
   if(res.arsenal){startArsenal(res.arsenal);return}
-  if(res.end){S.screen='end';clearSave();render();window.scrollTo(0,0);return}
+  if(res.end){S.screen='end';save();render();window.scrollTo(0,0);return}
   if(res.combat){await startCombat(res.combat);return}
   if(res.levelup){startLevel(res.levelup);return}
-  if(res.go){if(S.fxs)delete S.fxs[res.go];S.scene=res.go;if(CHAPTER_START.has(res.go))fullRestore();if(AGES[res.go])S.age=AGES[res.go];if(SCENES[res.go].checkpoint)setCheckpoint();window.scrollTo({top:0,behavior:reduced()?'auto':'smooth'})}
+  if(res.go){if(S.fxs)delete S.fxs[res.go];S.scene=res.go;if(CHAPTER_START.has(res.go))fullRestore();if(AGES[res.go])S.age=AGES[res.go];if(SCENES[res.go].checkpoint)setCheckpoint();storeChapter(res.go);window.scrollTo({top:0,behavior:reduced()?'auto':'smooth'})}
   save();render();
 }
 function checkDown(){
@@ -6416,7 +6525,7 @@ function restChoice(id){
   if(id==='mind'){const b=S.san;S.san=Math.min(S.sanMax,S.san+rollExpr('2d4').total+S.attr.PRE);t=L(`Quedas, rolamentos, flexões. Até a cabeça ficar em silêncio. +${S.san-b} SAN.`,`Falls, rolls, push-ups. Until your head goes quiet. +${S.san-b} SAN.`,`Caídas, rodadas, flexiones. Hasta que la cabeza se calla. +${S.san-b} SAN.`)}
   S.scene=S.lvl.next;S.lvl=null;S.screen='game';S.treatReady=true;
   S.outcome=`<p>${t} ${L('PE restaurados.','EP restored.','PE restaurados.')}</p>`;S.outcomeCls='ok';
-  setCheckpoint();save();render();window.scrollTo(0,0);
+  setCheckpoint();save();storeChapter(S.scene);render();window.scrollTo(0,0);
 }
 
 /* ---------- fim ---------- */
@@ -6453,7 +6562,7 @@ function renderEnd2(){
     <p style="font-family:var(--mono);font-size:13px">${L('Agente de elite','Elite agent','Agente de élite')} · ${TRILHA()} · ${S.flags.casou?27:26} ${L('anos','y/o','años')} · NEX 80% · SAN ${S.san}/${S.sanMax} · ${PV()} ${S.pv}/${S.pvMax}</p>
     ${Ls.map(l=>`<p>${l}</p>`).join('')}
     <ul><li>${L('Pistas','Clues','Pistas')}: ${S.clues.length}/${act2Clues()}</li><li>${L('Relíquia de Sangue','Blood Relic','Reliquia de Sangre')}: ${L('contida','contained','contenida')}</li><li>${L('Relíquia de Energia','Energy Relic','Reliquia de Energía')}: ${L('contida','contained','contenida')}</li><li>${L('Relíquia de Conhecimento','Knowledge Relic','Reliquia de Conocimiento')}: ${L('contida','contained','contenida')}</li><li>${L('Relíquia de Morte','Death Relic','Reliquia de Muerte')}: ${L('contida','contained','contenida')}</li><li>${L('Quadro do Comprador','The Buyer\'s board','Mural del Comprador')}: ${S.flags.a5acertos||0}/2</li><li>${L('Kavyur','Kavyur','Kavyur')}: ${L('agente da Ordem','Order agent','agente de la Orden')}</li><li>${L('Traidor','Traitor','Traidor')}: ${S.flags.acusou==='vt'?L('encontrado por você','found by you','encontrado por ti'):L('confessou','confessed','confesó')}</li><li>${L('Quadro de investigação','Investigation board','Mural de investigación')}: ${S.flags.a3acertos||0}/3</li></ul>
-    <p style="margin-top:14px"><b>${L('Fim do Ato II.','End of Act II.','Fin del Acto II.')}</b></p>
+    <p style="margin-top:14px"><b>${L('Fim do Ato II.','End of Act II.','Fin del Acto II.')}</b></p><p style="margin-top:6px">${L('A história continua em <b>Succedere 3</b>.','The story continues in <b>Succedere 3</b>.','La historia continúa en <b>Succedere 3</b>.')}</p><p style="margin-top:10px"><a class="cta succ-link" href="https://wasmorf.github.io/Succedere3/" target="_blank" rel="noopener noreferrer">${L('Jogar o Succedere 3','Play Succedere 3','Jugar Succedere 3')} ↗</a></p>
   </div>
   <div class="btns"><button class="cta" data-a="new">${L('Jogar de novo','Play again','Jugar de nuevo')}</button><button class="ghost" data-a="menu">${L('Menu principal','Main menu','Menú principal')}</button></div>
   ${X_LINK}</section>`;
@@ -6503,9 +6612,18 @@ document.addEventListener('click',async ev=>{
   const a=b.dataset.a,id=b.dataset.id;
   switch(a){
     case 'lang':setLang(id);break;
-    case 'new':D=draft();S={screen:'create'};render();window.scrollTo(0,0);break;
+    case 'new':{const go=()=>{D=draft();S={screen:'create'};render();window.scrollTo(0,0)};const cur=loadSave();if(cur&&!(cur.screen==='end'&&cur.act===2))confirmBox(L('Começar do zero?','Start over?','¿Empezar de cero?'),L('O salvamento automático vai ser substituído quando você começar. Os espaços manuais e os capítulos continuam guardados.','Your autosave will be replaced once you start. Manual slots and chapters stay saved.','El guardado automático se reemplazará al empezar. Los espacios manuales y los capítulos quedan guardados.'),L('Começar do zero','Start over','Empezar de cero'),go);else go();break}
+    case 'saves':SAVESUI.code=false;S={screen:'saves'};render();window.scrollTo(0,0);break;
+    case 'sv-slot-save':{const i=+id,cur=loadSave();if(!cur)break;const doit=()=>{sset(SV.slot(i),stamp(clone(cur)));toast(L(`Salvo no espaço ${i}`,`Saved to slot ${i}`,`Guardado en el espacio ${i}`));render()};if(sget(SV.slot(i)))confirmBox(L('Substituir este espaço?','Overwrite this slot?','¿Reemplazar este espacio?'),L('O que está salvo nele agora vai ser apagado.','What\'s saved in it now will be erased.','Lo que está guardado ahí ahora se va a borrar.'),L('Substituir','Overwrite','Reemplazar'),doit);else doit();break}
+    case 'sv-slot-load':{const s=sget(SV.slot(+id));if(!validState(s))break;confirmBox(L('Carregar este jogo?','Load this game?','¿Cargar esta partida?'),L('Você vai continuar a partir deste ponto. O salvamento automático atual fica guardado como cópia de segurança.','You\'ll continue from this point. Your current autosave is kept as a backup.','Vas a seguir desde este punto. El guardado automático actual queda como copia de seguridad.'),L('Carregar','Load','Cargar'),()=>{const cur=sget(SV.auto);if(cur)sset(SV.bak,cur);if(s.screen==='end'&&s.act!==2){startAct2();return}resumeState(s)});break}
+    case 'sv-slot-del':confirmBox(L('Apagar este espaço?','Delete this slot?','¿Borrar este espacio?'),L('Isso não pode ser desfeito.','This can\'t be undone.','Esto no se puede deshacer.'),L('Apagar','Delete','Borrar'),()=>{sdel(SV.slot(+id));render()});break;
+    case 'sv-ch-load':{const chs=sget(SV.ch)||{},s=chs[id];if(!validState(s))break;confirmBox(L('Recomeçar deste capítulo?','Restart from this chapter?','¿Reiniciar desde este capítulo?'),L('Você volta para o começo do capítulo com a ficha daquele momento. O salvamento automático atual fica guardado como cópia de segurança.','You go back to the start of the chapter with your sheet as it was then. Your current autosave is kept as a backup.','Vuelves al comienzo del capítulo con la ficha de ese momento. El guardado automático actual queda como copia de seguridad.'),L('Recomeçar','Restart','Reiniciar'),()=>{const cur=sget(SV.auto);if(cur)sset(SV.bak,cur);resumeState(s)});break}
+    case 'sv-export':downloadSave();break;
+    case 'sv-code':SAVESUI.code=!SAVESUI.code;render();break;
+    case 'sv-copy':{const t=$('svCode');if(t){t.select();try{navigator.clipboard.writeText(t.value).then(()=>toast(L('Código copiado','Code copied','Código copiado')),()=>{document.execCommand('copy');toast(L('Código copiado','Code copied','Código copiado'))})}catch(e){document.execCommand('copy')}}break}
+    case 'sv-paste':{const t=$('svCode');let o=null;try{o=JSON.parse(decodeURIComponent(escape(atob(t.value.trim()))))}catch(e){}doImport(o);break}
     case 'act2':startAct2();break;
-    case 'continue':{const sv=loadSave();if(sv){S=sv;busy=false;if(S.screen==='combat')S=Object.assign(clone(S.checkpoint),{checkpoint:S.checkpoint,screen:'game'});if(S.screen==='arsenal')S.screen='game';render()}break}
+    case 'continue':{const sv=loadSave();if(sv){if(sv.screen==='end'&&sv.act!==2){const pm=sv.playMs||0;startAct2();S.playMs=pm;save();break}if(sv.screen==='end'){S=sv;busy=false;render();break}resumeState(sv)}break}
     case 'back':case 'menu':if(S&&S.cls&&S.screen!=='end')save();S={screen:'title'};render();break;
     case 'attr':{D.attr[id]+=+b.dataset.d;const max=dPickCount();if(D.picks.length>max)D.picks=D.picks.slice(0,max);render();break}
     case 'pick':D.picks=D.picks.includes(id)?D.picks.filter(x=>x!==id):[...D.picks,id];render();break;
